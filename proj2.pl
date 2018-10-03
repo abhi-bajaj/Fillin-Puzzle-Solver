@@ -97,20 +97,14 @@ slot_row([Char | Chars], UnboundRow) :-
 
 slot_acc_row([],UnboundRow,UnboundRow).
 
-slot_acc_row([Char | Chars], RowAcc, UnboundRow) :-
+slot_acc_row([Char | Chars], RowAcc, UnboundRow):-
 
-
-
-
-slot_word([],UnboundWord,UnboundWord).
-
-slot_word([Char | Chars], CharAcc, UnboundWord):-
 	(	Char = '_'
 		->	length(Unbound, 1),
-			append(CharAcc, Unbound, UnboundWord0)
+			append(RowAcc, Unbound, UnboundRow0)
 		;	
 			
-			true
+			append(RowAcc, [Char], UnboundRow0)
 			
 	),
-	slot_word(Chars, UnboundWord0, UnboundWord).
+	slot_acc_row(Chars, UnboundRow0, UnboundRow).

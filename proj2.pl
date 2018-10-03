@@ -77,39 +77,60 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	create_slots_horizontal(Puzzle0, Slots, PuzzleSlots).
+	once(create_slots_horizontal(Puzzle0, [], PuzzleSlots)),
+	print(PuzzleSlots),
+	Puzzle = Puzzle0.
+	
 
-
+create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
-	create_acc_slots_horizontal([Row|Rows],[],Slots,PuzzleSlots).
+	slot_row(Row, RowAcc),
+	append(Slots, [RowAcc], PuzzleSlots0),
+	create_slots_horizontal(Rows, PuzzleSlots0, PuzzleSlots).
 
 create_acc_slots_horizontal([],[],[],[]).
 
 create_acc_slots_horizontal([Row|Rows], Acc, Slots, PuzzleSlots) :-
 	slot_row(Row, Acc),
-	append(Acc, Slots, PuzzleSlots),
-	create_acc_slots_horizontal(Rows, PuzzleSlots).
+	append(Slots, Acc, PuzzleSlots),
+	create_acc_slots_horizontal(Rows,[],PuzzleSlots).
 
 % Eg. ['_','_',#,#,'_','_'] -> [_G15092255, _G15092258, #, #, _G15092285, _G15092300]
-slot_row([Char | Chars], UnboundRow) :-
-	slot_acc_row([Char|Chars], [], UnboundRow).
-
+slot_row(Row, UnboundRow) :-
+	% Only need to do it once per row
+	once(slot_acc_row(Row, [], UnboundRow)).
 
 slot_acc_row([],UnboundRow,UnboundRow).
 
 slot_acc_row(Row, RowAcc, UnboundRow):-
 
-	slot_word(Row, UnboundWord),
-	append(RowAcc,[UnboundWord],UnboundRow0),
-	length(UnboundWord, WordLen),
-	N is WordLen + 1,
-	take(N,Row,Back),
-	slot_acc_row(Back, UnboundRow0, UnboundRow).
+	(	dif(Row, [])
+		->
 	
+			slot_word(Row, UnboundWord),
+			append(RowAcc,[UnboundWord],UnboundRow0),
+			length(UnboundWord, WordLen),
+			N is WordLen + 1,
+			take(N,Row,Back)
+			
+			
+			% (	N > RowLen
+			
+			% 	->	slot_acc_row([], UnboundRow0, UnboundRow)
+			% 	;	take2(N,Row, Back),
+			% 		slot_acc_row(Back, UnboundRow0, UnboundRow)
+
+			% )
+		
+		
+	),
+	slot_acc_row(Back, UnboundRow0, UnboundRow).
 
 
 
 slot_word(Row, UnboundWord):-
+	length(Row, RowLen),
+	RowLen > 0,
 	slot_acc_word(Row,[],UnboundWord).
 
 slot_acc_word([],UnboundWord,UnboundWord).

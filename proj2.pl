@@ -97,14 +97,47 @@ slot_row([Char | Chars], UnboundRow) :-
 
 slot_acc_row([],UnboundRow,UnboundRow).
 
-slot_acc_row([Char | Chars], RowAcc, UnboundRow):-
+slot_acc_row(Row, RowAcc, UnboundRow):-
 
+	slot_word(Row, UnboundWord),
+	append(RowAcc,[UnboundWord],UnboundRow0),
+	length(UnboundWord, WordLen),
+	N is WordLen + 1,
+	take(N,Row,Back),
+	slot_acc_row(Back, UnboundRow0, UnboundRow).
+	
+
+
+
+slot_word(Row, UnboundWord):-
+	slot_acc_word(Row,[],UnboundWord).
+
+slot_acc_word([],UnboundWord,UnboundWord).
+slot_acc_word([Char|Chars], WordAcc, UnboundWord) :-
 	(	Char = '_'
 		->	length(Unbound, 1),
-			append(RowAcc, Unbound, UnboundRow0)
+			append(WordAcc, Unbound, UnboundWord0),
+			slot_acc_word(Chars,UnboundWord0,UnboundWord)
+
 		;	
+		% append(RowAcc, [Char], UnboundRow0)
+			slot_acc_word([],WordAcc,UnboundWord)
+
 			
-			append(RowAcc, [Char], UnboundRow0)
 			
-	),
-	slot_acc_row(Chars, UnboundRow0, UnboundRow).
+	).
+
+take(N, List, Back) :-
+	length(List, ListLen),
+	(
+		N =< ListLen
+		->	length(Front,N),
+			append(Front, Back, List)
+		;
+		N1 is N-1,
+		take(N1, List, Back)
+	).
+
+take2(N, List, Back) :-
+	length(Front,N),
+	append(Front, Back, List).

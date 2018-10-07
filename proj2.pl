@@ -73,15 +73,27 @@ samelength([_|L1], [_|L2]) :-
 % implementation.
 solve_puzzle(Puzzle,[],Puzzle).
 
-solve_puzzle(Puzzle0, WordList, Puzzle) :-
+solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	once(create_slots_horizontal(Puzzle0, [], PuzzleSlots)),
-	print(PuzzleSlots),
+	create_slots_horizontal(Puzzle0, [], [[HeadSlot|Rest]|TailSlot]),
+	print(HeadWord),
+	print(HeadSlot),
+	fill_slot(HeadWord, HeadSlot, WordSlot),
+	print(WordSlot),
+	!,
 	Puzzle = Puzzle0.
 	
 
+fill_slot(Word, Slot, WordSlot):-
+	length(Word, WordLen),
+	length(Slot, WordLen),
+	WordSlot = Word,
+	!.
+
+	
+	
 create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 	slot_row(Row, RowAcc),
@@ -111,7 +123,9 @@ slot_acc_row(Row, RowAcc, UnboundRow):-
 			append(RowAcc,[UnboundWord],UnboundRow0),
 			length(UnboundWord, WordLen),
 			N is WordLen + 1,
-			take(N,Row,Back)
+			take(N,Row,Back),
+			remove_hash(Back, HashNum),
+			take(HashNum, Back, NewBack)
 			
 			
 			% (	N > RowLen
@@ -124,30 +138,46 @@ slot_acc_row(Row, RowAcc, UnboundRow):-
 		
 		
 	),
-	slot_acc_row(Back, UnboundRow0, UnboundRow).
+	slot_acc_row(NewBack, UnboundRow0, UnboundRow).
 
 
 
 slot_word(Row, UnboundWord):-
 	length(Row, RowLen),
 	RowLen > 0,
-	slot_acc_word(Row,[],UnboundWord).
+	once(slot_acc_word(Row,[],UnboundWord)).
 
 slot_acc_word([],UnboundWord,UnboundWord).
-slot_acc_word([Char|Chars], WordAcc, UnboundWord) :-
-	(	Char = '_'
-		->	length(Unbound, 1),
-			append(WordAcc, Unbound, UnboundWord0),
-			slot_acc_word(Chars,UnboundWord0,UnboundWord)
 
-		;	
-		% append(RowAcc, [Char], UnboundRow0)
-			slot_acc_word([],WordAcc,UnboundWord)
+slot_acc_word(['_'|Chars], WordAcc, UnboundWord) :-
+	
+	length(Unbound, 1),
+	append(WordAcc, Unbound, UnboundWord0),
+	slot_acc_word(Chars,UnboundWord0,UnboundWord).
 
-			
-			
+slot_acc_word([#|Chars], WordAcc, UnboundWord) :-
+	(
+		length(WordAcc, Len),
+		Len =:= 0
+		
+		->	slot_acc_word(Chars, WordAcc, UnboundWord)
+		;	slot_acc_word([],WordAcc, UnboundWord)
+
 	).
 
+			
+			
+
+remove_hash(List, Hash) :-
+	once(remove_acc_hash(List,0, Hash)).
+
+remove_acc_hash([#|List], HashAcc, TotalHash):-
+	TotalHash0 is HashAcc + 1,
+	remove_acc_hash(List,TotalHash0,TotalHash).
+remove_acc_hash(_, TotalHash,TotalHash).
+
+
+	
 take(N, List, Back) :-
 	length(List, ListLen),
 	(
@@ -155,10 +185,10 @@ take(N, List, Back) :-
 		->	length(Front,N),
 			append(Front, Back, List)
 		;
-		N1 is N-1,
-		take(N1, List, Back)
+		
+		take(ListLen, List, Back)
 	).
-
 take2(N, List, Back) :-
 	length(Front,N),
 	append(Front, Back, List).
+

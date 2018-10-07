@@ -75,23 +75,33 @@ samelength([_|L1], [_|L2]) :-
 % implementation.
 solve_puzzle(Puzzle,[],Puzzle).
 
-solve_puzzle(Puzzle0, WordList, Puzzle) :-
+solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	create_slots_horizontal(Puzzle0, [], HorizontalSlots),
+	% create_slots_horizontal(Puzzle0, [], HorizontalSlots),
+% 
+	% transpose(Puzzle0, PuzzleVertical),
+	% create_slots_horizontal(PuzzleVertical, HorizontalSlots, VerticalSlots),
+	create_slots_horizontal(Puzzle0, [], [[HeadSlot|TailSlot]|RestSlots]),
 	
-	print(SortedList),
-	
+	print(HeadSlot),
+	nl,
+	fill_slot(['W','P','W','A','W'],HeadSlot),
+	print(HeadSlot),
+	nl,
 	!,
+
+	print([[HeadSlot|TailSlot]|RestSlots]),
+
 	Puzzle = Puzzle0.
 	
 
 
-fill_slot(Word, Slot, WordSlot):-
+fill_slot(Word, Slot):-
 	length(Word, WordLen),
 	length(Slot, WordLen),
-	WordSlot = Word,
+	Slot = Word,
 	!.
 
 	
@@ -101,13 +111,6 @@ create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 	slot_row(Row, RowAcc),
 	append(Slots, [RowAcc], PuzzleSlots0),
 	create_slots_horizontal(Rows, PuzzleSlots0, PuzzleSlots).
-
-create_acc_slots_horizontal([],[],[],[]).
-
-create_acc_slots_horizontal([Row|Rows], Acc, Slots, PuzzleSlots) :-
-	slot_row(Row, Acc),
-	append(Slots, Acc, PuzzleSlots),
-	create_acc_slots_horizontal(Rows,[],PuzzleSlots).
 
 % Eg. ['_','_',#,#,'_','_'] -> [_G15092255, _G15092258, #, #, _G15092285, _G15092300]
 slot_row(Row, UnboundRow) :-

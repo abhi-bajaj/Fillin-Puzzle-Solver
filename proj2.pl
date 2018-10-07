@@ -83,7 +83,7 @@ solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
 % 
 	% transpose(Puzzle0, PuzzleVertical),
 	% create_slots_horizontal(PuzzleVertical, HorizontalSlots, VerticalSlots),
-	create_slots_horizontal(Puzzle0, [], [[HeadSlot|TailSlot]|RestSlots]),
+	create_slots_horizontal(Puzzle0, [], [HeadSlot|RestSlots]),
 	
 	print(HeadSlot),
 	nl,
@@ -92,9 +92,9 @@ solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
 	nl,
 	!,
 
-	print([[HeadSlot|TailSlot]|RestSlots]),
+	print([HeadSlot|RestSlots]),
 
-	Puzzle = Puzzle0.
+	Puzzle = [HeadSlot|RestSlots].
 	
 
 
@@ -109,7 +109,7 @@ fill_slot(Word, Slot):-
 create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 	slot_row(Row, RowAcc),
-	append(Slots, [RowAcc], PuzzleSlots0),
+	append(Slots, RowAcc, PuzzleSlots0),
 	create_slots_horizontal(Rows, PuzzleSlots0, PuzzleSlots).
 
 % Eg. ['_','_',#,#,'_','_'] -> [_G15092255, _G15092258, #, #, _G15092285, _G15092300]

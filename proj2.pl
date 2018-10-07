@@ -1,6 +1,8 @@
 % You can use this code to get started with your fillin puzzle solver.
 % Make sure you replace this comment with your own documentation.
 
+:- ensure_loaded(library(clpfd)).
+
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 	read_file(PuzzleFile, Puzzle),
 	read_file(WordlistFile, Wordlist),
@@ -73,18 +75,18 @@ samelength([_|L1], [_|L2]) :-
 % implementation.
 solve_puzzle(Puzzle,[],Puzzle).
 
-solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
+solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	create_slots_horizontal(Puzzle0, [], [[HeadSlot|Rest]|TailSlot]),
-	print(HeadWord),
-	print(HeadSlot),
-	fill_slot(HeadWord, HeadSlot, WordSlot),
-	print(WordSlot),
+	create_slots_horizontal(Puzzle0, [], HorizontalSlots),
+	
+	print(SortedList),
+	
 	!,
 	Puzzle = Puzzle0.
 	
+
 
 fill_slot(Word, Slot, WordSlot):-
 	length(Word, WordLen),
@@ -149,19 +151,28 @@ slot_word(Row, UnboundWord):-
 
 slot_acc_word([],UnboundWord,UnboundWord).
 
-slot_acc_word(['_'|Chars], WordAcc, UnboundWord) :-
-	
-	length(Unbound, 1),
-	append(WordAcc, Unbound, UnboundWord0),
-	slot_acc_word(Chars,UnboundWord0,UnboundWord).
+slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 
-slot_acc_word([#|Chars], WordAcc, UnboundWord) :-
 	(
-		length(WordAcc, Len),
-		Len =:= 0
+		Char = #
+		->	
+			(	length(WordAcc, Len),
+				Len =:= 0
 		
-		->	slot_acc_word(Chars, WordAcc, UnboundWord)
-		;	slot_acc_word([],WordAcc, UnboundWord)
+				->	slot_acc_word(Chars, WordAcc, UnboundWord)
+				;	slot_acc_word([],WordAcc, UnboundWord)
+			)
+		;	
+			(
+				is_alpha(Char)
+				->	append(WordAcc, [Char], UnboundWord0),
+					slot_acc_word(Chars,UnboundWord0,UnboundWord)
+				;	length(Unbound, 1),
+					append(WordAcc, Unbound, UnboundWord0),
+					slot_acc_word(Chars,UnboundWord0,UnboundWord)
+			
+			
+			)
 
 	).
 

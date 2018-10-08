@@ -3,6 +3,18 @@
 
 :- ensure_loaded(library(clpfd)).
 
+% https://stackoverflow.com/questions/27760689/sort-a-list-of-structures-by-the-size-of-a-list
+el_keyed(El,N-El) :-
+	
+	length(El, N).
+ 
+sort_wordlist(Els, ElsS) :-
+	maplist(el_keyed, Els, KVs),
+	keysort(KVs, KVsS),
+	reverse(KVsS, RVsS),
+	
+	maplist(el_keyed, ElsS, RVsS).
+ 
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 	read_file(PuzzleFile, Puzzle),
 	read_file(WordlistFile, Wordlist),
@@ -75,38 +87,45 @@ samelength([_|L1], [_|L2]) :-
 % implementation.
 solve_puzzle(Puzzle,[],Puzzle).
 
-solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
+solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	fill_puzzle_logical(Puzzle0, PuzzleLogical),
-	nl,
-	nl,
-	create_slots_horizontal(PuzzleLogical, [], SlotList),
-	nl,
-	transpose(PuzzleLogical, PuzzleVertical),
 	
+	sort_wordlist(WordList, SortedWordList),
+	fill_puzzle_logical(Puzzle0, PuzzleLogical),
+	
+	create_slots_horizontal(PuzzleLogical, [], SlotList),
+	
+	transpose(PuzzleLogical, PuzzleVertical),
+
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	
-	
+	fill_slot_list(SortedWordList,Slots),
+
+
+	!,
+	% print(SortedWords),
+	% !,
 	% print(HeadSlot),
 	% nl,
-	% fill_slot(['W','P','W','A','W'],HeadSlot),
+	% ,
 	% print(HeadSlot),
 	% nl,
 	% !,
 
 	% print([HeadSlot|RestSlots]),
 
-	Puzzle = Puzzle0.
+	Puzzle = PuzzleLogical.
+
+
 	
 
+fill_slot_list([],_).
+fill_slot_list([Word|Words], Slots) :-
+	member(Word, Slots),
+	fill_slot_list(Words, Slots).
 
-fill_slot(Word, Slot):-
-	length(Word, WordLen),
-	length(Slot, WordLen),
-	Slot = Word,
-	!.
 
 
 fill_puzzle_logical(Puzzle0, PuzzleLogical) :-
@@ -143,9 +162,15 @@ logical_acc_row([Char|Chars], LogicalRowAcc, LogicalRow) :-
 create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 	slot_row(Row, RowAcc),
-	append(Slots, RowAcc, PuzzleSlots0),
-	create_slots_horizontal(Rows, PuzzleSlots0, PuzzleSlots).
-
+	length(Row, RowLen),
+	(
+			RowLen > 1
+			->	append(Slots, RowAcc, PuzzleSlots0),
+				create_slots_horizontal(Rows, PuzzleSlots0, PuzzleSlots)
+			;	create_slots_horizontal(Rows, Slots, PuzzleSlots)
+			
+	).
+	
 % Eg. ['_','_',#,#,'_','_'] -> [_G15092255, _G15092258, #, #, _G15092285, _G15092300]
 slot_row(Row, UnboundRow) :-
 	% Only need to do it once per row
@@ -218,7 +243,7 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 	).
 
 			
-remove_hash([],Hash).
+remove_hash([],_Hash).
 
 remove_hash([Char|Chars], Hash) :-
 	(

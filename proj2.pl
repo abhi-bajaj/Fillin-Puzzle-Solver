@@ -79,22 +79,26 @@ solve_puzzle(Puzzle0, [HeadWord|TailWord], Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
-	% create_slots_horizontal(Puzzle0, [], HorizontalSlots),
-% 
-	% transpose(Puzzle0, PuzzleVertical),
-	% create_slots_horizontal(PuzzleVertical, HorizontalSlots, VerticalSlots),
-	create_slots_horizontal(Puzzle0, [], [HeadSlot|RestSlots]),
+	fill_puzzle_logical(Puzzle0, PuzzleLogical),
+	nl,
+	nl,
+	create_slots_horizontal(PuzzleLogical, [], SlotList),
+	nl,
+	transpose(PuzzleLogical, PuzzleVertical),
 	
-	print(HeadSlot),
-	nl,
-	fill_slot(['W','P','W','A','W'],HeadSlot),
-	print(HeadSlot),
-	nl,
-	!,
+	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
+	
+	
+	% print(HeadSlot),
+	% nl,
+	% fill_slot(['W','P','W','A','W'],HeadSlot),
+	% print(HeadSlot),
+	% nl,
+	% !,
 
-	print([HeadSlot|RestSlots]),
+	% print([HeadSlot|RestSlots]),
 
-	Puzzle = [HeadSlot|RestSlots].
+	Puzzle = Puzzle0.
 	
 
 
@@ -104,8 +108,38 @@ fill_slot(Word, Slot):-
 	Slot = Word,
 	!.
 
+
+fill_puzzle_logical(Puzzle0, PuzzleLogical) :-
+	once(fill_puzzle_acc_logical(Puzzle0,[],PuzzleLogical)).
+
+fill_puzzle_acc_logical([], PuzzleLogical, PuzzleLogical).
+fill_puzzle_acc_logical([Row|Rows], LogicalAcc, PuzzleLogical):-
+	logical_row(Row, LogicalRow),
 	
-	
+	append(LogicalAcc, [LogicalRow], PuzzleLogical0),
+	fill_puzzle_acc_logical(Rows, PuzzleLogical0, PuzzleLogical).
+
+logical_row(Row, LogicalRow) :-
+	once(logical_acc_row(Row, [], LogicalRow)).
+
+logical_acc_row([], LogicalRow, LogicalRow).
+logical_acc_row([Char|Chars], LogicalRowAcc, LogicalRow) :-
+	(
+		Char = #
+		->	
+			append(LogicalRowAcc, [Char], LogicalRow0)
+		;	
+			(
+				is_alpha(Char)
+				->	append(LogicalRowAcc, [Char], LogicalRow0)
+					
+				;	length(Unbound, 1),
+					append(LogicalRowAcc, Unbound, LogicalRow0)			
+			
+			)
+	),
+	logical_acc_row(Chars, LogicalRow0, LogicalRow).
+
 create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 	slot_row(Row, RowAcc),
@@ -127,11 +161,14 @@ slot_acc_row(Row, RowAcc, UnboundRow):-
 			slot_word(Row, UnboundWord),
 			append(RowAcc,[UnboundWord],UnboundRow0),
 			length(UnboundWord, WordLen),
-			N is WordLen + 1,
-			take(N,Row,Back),
-			remove_hash(Back, HashNum),
-			take(HashNum, Back, NewBack)
-			
+			take2(WordLen,Row,Back),
+			(
+				Back == []
+				->	HashNum = 0
+				;	remove_hash(Back, HashNum)
+			),
+			take2(HashNum, Back, NewBack)
+		
 			
 			% (	N > RowLen
 			
@@ -157,7 +194,7 @@ slot_acc_word([],UnboundWord,UnboundWord).
 slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 
 	(
-		Char = #
+		Char == '#'
 		->	
 			(	length(WordAcc, Len),
 				Len =:= 0
@@ -167,12 +204,13 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 			)
 		;	
 			(
-				is_alpha(Char)
-				->	append(WordAcc, [Char], UnboundWord0),
-					slot_acc_word(Chars,UnboundWord0,UnboundWord)
-				;	length(Unbound, 1),
-					append(WordAcc, Unbound, UnboundWord0),
-					slot_acc_word(Chars,UnboundWord0,UnboundWord)
+				append(WordAcc, [Char], UnboundWord0),
+				slot_acc_word(Chars,UnboundWord0,UnboundWord)
+				% is_alpha(Char)
+				% ->	
+				% ;	length(Unbound, 1),
+				% 	append(WordAcc, Unbound, UnboundWord0),
+				% 	slot_acc_word(Chars,UnboundWord0,UnboundWord)
 			
 			
 			)
@@ -180,15 +218,26 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 	).
 
 			
-			
+remove_hash([],Hash).
 
-remove_hash(List, Hash) :-
-	once(remove_acc_hash(List,0, Hash)).
+remove_hash([Char|Chars], Hash) :-
+	(
+		Char == '#'
+		->	once(remove_acc_hash(Chars,1, Hash))
+		; Hash = 0
+	).
 
-remove_acc_hash([#|List], HashAcc, TotalHash):-
-	TotalHash0 is HashAcc + 1,
-	remove_acc_hash(List,TotalHash0,TotalHash).
-remove_acc_hash(_, TotalHash,TotalHash).
+remove_acc_hash([Char|Chars], HashAcc, TotalHash):-
+	(
+		Char == '#'
+		->	TotalHash0 is HashAcc + 1,
+			remove_acc_hash(Chars,TotalHash0,TotalHash)
+		;	remove_acc_hash([],HashAcc, TotalHash)
+		
+	
+	).
+	
+remove_acc_hash([], TotalHash,TotalHash).
 
 
 	

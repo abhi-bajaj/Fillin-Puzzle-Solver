@@ -105,16 +105,7 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 
 
 	!,
-	% print(SortedWords),
-	% !,
-	% print(HeadSlot),
-	% nl,
-	% ,
-	% print(HeadSlot),
-	% nl,
-	% !,
-
-	% print([HeadSlot|RestSlots]),
+	
 
 	Puzzle = PuzzleLogical.
 

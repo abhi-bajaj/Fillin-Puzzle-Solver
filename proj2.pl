@@ -105,9 +105,6 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	transpose(PuzzleLogical, PuzzleVertical),
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
-	print(Slots),
-	nl,
-	nl,
 	sort_wordlist(Slots, SortedSlots),
 	fill_slot_list(SortedWordList, SortedSlots),
 	!,
@@ -153,12 +150,16 @@ fill_slot_list([Word|Words], Slots) :-
 	keysort(Combos, [HeadSorted|SortedCombos]),
 	HeadSorted = Num-CurrSlot,
 	Num > 0,
-	append([CurrSlot], NewSlotList, Slots),
 
 	member(CurrSlot, [Word|Words]),
-	append([CurrSlot], NewWordList, [Word|Words]),
-	print(NewSlotList),
-	nl,
+	%  Delete doesn't work as getting [vesicle gets rid of _,_,_,i,_,_,_]
+	% delete(Slots, CurrSlot, NewSlotList),
+
+	% delete([Word|Words], CurrSlot, NewWordList),
+	% append doesnt work as not necsarrily at start of list
+	exclude(==(CurrSlot), Slots, NewSlotList),
+	exclude(==(CurrSlot), [Word|Words], NewWordList),
+	
 	fill_slot_list(NewWordList, NewSlotList).
 
 
@@ -215,35 +216,34 @@ slot_acc_row([],UnboundRow,UnboundRow).
 
 slot_acc_row(Row, RowAcc, UnboundRow):-
 
-	(	dif(Row, [])
-		->
-	
-			slot_word(Row, UnboundWord),
-			length(UnboundWord, WordLen),
-			(
-				WordLen > 1
-				->	append(RowAcc,[UnboundWord],UnboundRow0),
-					take2(WordLen,Row,Back),
-					(
-						Back == []
-						->	HashNum = 0
-						;	remove_hash(Back, HashNum)
-					),
-					take2(HashNum, Back, NewBack)
-				;	take2(WordLen,Row,Back),
-					(
-						Back == []
-						->	HashNum = 0
-						;	remove_hash(Back, HashNum)
-					),
-					take2(HashNum, Back, NewBack),
-					UnboundRow0 = []
-			)
-					
+	(dif(Row, [])
+	->
+		remove_hash(Row, InitialHashNum),
+		take2(InitialHashNum, Row, InitRow),
+		slot_word(InitRow, UnboundWord),
+		length(UnboundWord, WordLen),
+		(
+			WordLen > 1
+			->	append(RowAcc,[UnboundWord],UnboundRow0),
+				take2(WordLen,InitRow,Back),
+				(
+					Back == []
+					->	HashNum = 0
+					;	remove_hash(Back, HashNum)
+				),
+				take2(HashNum, Back, NewBack)
+			;	take2(WordLen,InitRow,Back),
+				(
+					Back == []
+					->	HashNum = 0
+					;	remove_hash(Back, HashNum)
+				),
+				take2(HashNum, Back, NewBack),
+				UnboundRow0 = []
+		)
+				
 	),
 	slot_acc_row(NewBack, UnboundRow0, UnboundRow).
-
-
 
 slot_word(Row, UnboundWord):-
 	length(Row, RowLen),

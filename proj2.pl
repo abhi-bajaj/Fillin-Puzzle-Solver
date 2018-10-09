@@ -85,8 +85,6 @@ samelength([_|L1], [_|L2]) :-
 % This code is obviously wrong: it just gives back the unfilled puzzle
 % as result.  You'll need to replace this with a working
 % implementation.
-solve_puzzle(Puzzle,[],Puzzle).
-
 solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
     %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
@@ -95,13 +93,15 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	sort_wordlist(WordList, SortedWordList),
 	fill_puzzle_logical(Puzzle0, PuzzleLogical),
 	
+	
 	create_slots_horizontal(PuzzleLogical, [], SlotList),
 	
 	transpose(PuzzleLogical, PuzzleVertical),
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
+	sort_wordlist(Slots, SortedSlots),
 	
-	fill_slot_list(SortedWordList,Slots),
+	fill_slot_list(SortedWordList, SortedSlots),
 
 
 	!,

@@ -14,7 +14,13 @@ sort_wordlist(Els, ElsS) :-
 	reverse(KVsS, RVsS),
 	
 	maplist(el_keyed, ElsS, RVsS).
- 
+
+
+sort_key(Els-Slots, ElsS):-
+	maplist(el_sort, Els-Slots, KVs),
+	keysort(KVs, KVsS),
+	maplist(el_sort, ElsS, KVsS).
+
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 	read_file(PuzzleFile, Puzzle),
 	read_file(WordlistFile, Wordlist),
@@ -99,6 +105,7 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	transpose(PuzzleLogical, PuzzleVertical),
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
+	print(Slots),
 	sort_wordlist(Slots, SortedSlots),
 	
 	fill_slot_list(SortedWordList, SortedSlots),
@@ -110,12 +117,44 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	Puzzle = PuzzleLogical.
 
 
+combo_slot_word(Slot, [Word|Words], SlotFits-Slot):-
+	combo_slot_word_acc(Slot, [Word|Words], 0, SlotFits).
+
+combo_slot_word_acc(Slot, [], SlotFits, SlotFits).
+combo_slot_word_acc(Slot, [Word|Words], SlotFitsAcc, SlotFits) :-
+	(
+		copy_term(Slot, CopySlot),
+		
+		member(Word, [CopySlot])
+		->	SlotFits0 is SlotFitsAcc + 1,
+			combo_slot_word_acc(Slot, Words, SlotFits0, SlotFits)
+		;	combo_slot_word_acc(Slot, Words, SlotFitsAcc, SlotFits)
+
+
+
 	
+	).
+
+generate_all_combos([], WordList, Combos, Combos).
+generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
+	combo_slot_word(Slot, WordList, ComboCurrent),
+	append(ComboAcc, [ComboCurrent], CombosAcc0),
+	generate_all_combos(Slots, WordList, CombosAcc0, Combos).
+
+try_s(S-Slot, Slot).
 
 fill_slot_list([],_).
 fill_slot_list([Word|Words], Slots) :-
-	member(Word, Slots),
-	fill_slot_list(Words, Slots).
+	% Make a X-Y, where X is NumMatches-Slot
+	% Sort by length of list
+	% Pick the first word from list of smallest length
+	generate_all_combos(Slots, [Word|Words], [], Combos),
+	keysort(Combos, [HeadSorted|SortedCombos]),
+	try_s(HeadSorted, CurrSlot),
+	delete(Slots, CurrSlot, NewSlotList),
+	member(CurrSlot, [Word|Words]),
+	delete([Word|Words],CurrSlot, NewWordList),
+	fill_slot_list(NewWordList, NewSlotList).
 
 
 

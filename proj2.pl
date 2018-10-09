@@ -107,11 +107,10 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	print(Slots),
 	sort_wordlist(Slots, SortedSlots),
-	
 	fill_slot_list(SortedWordList, SortedSlots),
 
 
-	!,
+	
 	
 
 	Puzzle = PuzzleLogical.
@@ -143,7 +142,7 @@ generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
 
 try_s(S-Slot, Slot).
 
-fill_slot_list([],_).
+fill_slot_list([],[]).
 fill_slot_list([Word|Words], Slots) :-
 	% Make a X-Y, where X is NumMatches-Slot
 	% Sort by length of list
@@ -151,9 +150,10 @@ fill_slot_list([Word|Words], Slots) :-
 	generate_all_combos(Slots, [Word|Words], [], Combos),
 	keysort(Combos, [HeadSorted|SortedCombos]),
 	try_s(HeadSorted, CurrSlot),
-	delete(Slots, CurrSlot, NewSlotList),
+	append([CurrSlot], NewSlotList, Slots),
+
 	member(CurrSlot, [Word|Words]),
-	delete([Word|Words],CurrSlot, NewWordList),
+	append([CurrSlot], NewWordList, [Word|Words]),
 	fill_slot_list(NewWordList, NewSlotList).
 
 
@@ -214,26 +214,27 @@ slot_acc_row(Row, RowAcc, UnboundRow):-
 		->
 	
 			slot_word(Row, UnboundWord),
-			append(RowAcc,[UnboundWord],UnboundRow0),
 			length(UnboundWord, WordLen),
-			take2(WordLen,Row,Back),
 			(
-				Back == []
-				->	HashNum = 0
-				;	remove_hash(Back, HashNum)
-			),
-			take2(HashNum, Back, NewBack)
-		
-			
-			% (	N > RowLen
-			
-			% 	->	slot_acc_row([], UnboundRow0, UnboundRow)
-			% 	;	take2(N,Row, Back),
-			% 		slot_acc_row(Back, UnboundRow0, UnboundRow)
-
-			% )
-		
-		
+				WordLen > 1
+				->	append(RowAcc,[UnboundWord],UnboundRow0),
+					take2(WordLen,Row,Back),
+					(
+						Back == []
+						->	HashNum = 0
+						;	remove_hash(Back, HashNum)
+					),
+					take2(HashNum, Back, NewBack)
+				;	take2(WordLen,Row,Back),
+					(
+						Back == []
+						->	HashNum = 0
+						;	remove_hash(Back, HashNum)
+					),
+					take2(HashNum, Back, NewBack),
+					UnboundRow0 = []
+			)
+					
 	),
 	slot_acc_row(NewBack, UnboundRow0, UnboundRow).
 

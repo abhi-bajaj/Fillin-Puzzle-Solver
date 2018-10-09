@@ -1,19 +1,60 @@
+/*
+	Solution to COMP30020 2018s2 Project2
+    prepared by Arpit Bajaj, bajaja@student.unimelb.edu.au
+    October 2018
+	
+	Skeleton Code provided by Peter Schachte
 
+	Purpose:
+
+	This program aims to solve Fillin Puzzles. A fillin puzzle is similar to a 
+	crossword puzzle. You are provided with a list of all the words to place in 
+	the puzzle, but not told where they go.
+
+	The puzzle consists of a grid of squares, most of which are empty, 
+	into which letters or digits are to be written, but some of which are 
+	filled in solid, and are not to be written in.
+
+	For more information about fillin puzzles, refer to:
+	https://en.wikipedia.org/wiki/Fill-In_(puzzle)
+
+*/ 
+
+/*
+	The SWI Prolog library provides two different, incompatible 
+	transpose/2 predicates, and unfortunately autoloads the wrong one by
+	default. Therefore the clpfd library is used, which defines the predicate 
+	transpose(Matrix0, Matrix) that holds when Matrix0 and Matrix are lists of
+	lists, and the “columns” of each are the “rows” of the other.
+*/
 :- ensure_loaded(library(clpfd)).
 
-% https://stackoverflow.com/questions/27760689/sort-a-list-of-structures-by-the-size-of-a-list
-el_keyed(El,N-El) :-
-	
-	length(El, N).
- 
-sort_wordlist(Els, ElsS) :-
-	maplist(el_keyed, Els, KVs),
-	keysort(KVs, KVsS),
-	reverse(KVsS, RVsS),
-	
-	maplist(el_keyed, ElsS, RVsS).
 
+/*****************************************************************************/
+% 									Main
+/*****************************************************************************/	
 
+/*
+	This main/3 requires 3 filenames as input.
+
+	The first input is the PuzzleFile. The PuzzleFile must meet the following
+	constraints to be cosidered valid. Empty squares must be represented by '_'
+	characters, filled in squares should be represented by the character itself
+	and solid squares must be represented by # characters. Furthermore, the
+	grid formed by these squares must be a square grid.
+
+	The second input is the Word File. The WordFile must contain all of the 
+	words that belong in the puzzle. These should be seperated by a newline 
+	character.
+
+	The final input is the output file, to which the solution will be written 
+	to.
+
+	This predicate reads in the PuzzleFile and WordFile. After 
+	ensuring the puzzle file is valid, it attempts to solve the puzzle.
+	If it is successful in solving the puzzle, the solution is written out
+	to the SolutionFile.
+*/
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 	read_file(PuzzleFile, Puzzle),
 	read_file(WordlistFile, Wordlist),
@@ -21,83 +62,69 @@ main(PuzzleFile, WordlistFile, SolutionFile) :-
 	solve_puzzle(Puzzle, Wordlist, Solved),
 	print_puzzle(SolutionFile, Solved).
 
-read_file(Filename, Content) :-
-	open(Filename, read, Stream),
-	read_lines(Stream, Content),
-	close(Stream).
 
-read_lines(Stream, Content) :-
-	read_line(Stream, Line, Last),
-	(   Last = true
-	->  (   Line = []
-	    ->  Content = []
-	    ;   Content = [Line]
-	    )
-	;  Content = [Line|Content1],
-	    read_lines(Stream, Content1)
-	).
+/*****************************************************************************/
+% 							Solve Puzzle Predicates
+/*****************************************************************************/	
 
-read_line(Stream, Line, Last) :-
-	get_char(Stream, Char),
-	(   Char = end_of_file
-	->  Line = [],
-	    Last = true
-	; Char = '\n'
-	->  Line = [],
-	    Last = false
-	;   Line = [Char|Line1],
-	    read_line(Stream, Line1, Last)
-	).
+/*
+	The solve_puzzle/3 predicate will be True if Puzzle0 is succesfully solved
+	with regards to WordList, after which Puzzle will be the solved version of 
+	the puzzle.
 
-print_puzzle(SolutionFile, Puzzle) :-
-	open(SolutionFile, write, Stream),
-	maplist(print_row(Stream), Puzzle),
-	close(Stream).
+	The predicate works as such :
 
-print_row(Stream, Row) :-
-	maplist(put_puzzle_char(Stream), Row),
-	nl(Stream).
+	1. Sort the initial WordList in regards to the length of each word.
+	2. Fill the initial Puzzle with logical unbound variables, denoted by
+	   PuzzleLogical.
+	   Eg: [[#,'_','_', #], [#, #,'_','_']] -> [[#,_409,_302,#], [#,#_211,_231]]
+	
+	3. Create a list of slots arising from the PuzzleLogical.
+	   Eg: [[#,_409,_302, #], [#, #,_211,_231]] -> [[_409, _302], [_211,_231]]
 
-put_puzzle_char(Stream, Char) :-
-	(   var(Char)
-	->  put_char(Stream, '_')
-	;   put_char(Stream, Char)
-	).
+	4. Transpose the PuzzleLogical into its vertical form (PuzzleVerical)
+	   and perform step 3 on this vertical representation, appending the new
+	   list of slots to the previous list, resulting in Slots.
 
-valid_puzzle([]).
-valid_puzzle([Row|Rows]) :-
-	maplist(samelength(Row), Rows).
+	5. Sort the Slots in regards to the length of each slot.
+
+	6. Attempt to fill in each slot to solve the puzzle
 
 
-samelength([], []).
-samelength([_|L1], [_|L2]) :-
-	same_length(L1, L2).
-
-
+*/
 solve_puzzle(Puzzle0, WordList, Puzzle) :-
-
 	
 	sort_wordlist(WordList, SortedWordList),
 	fill_puzzle_logical(Puzzle0, PuzzleLogical),
-	
-	
 	create_slots_horizontal(PuzzleLogical, [], SlotList),
-	
 	transpose(PuzzleLogical, PuzzleVertical),
-
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
-	sort_wordlist(Slots, SortedSlots),
-	
-	
+	sort_wordlist(Slots, SortedSlots),	
 	fill_slot_list(SortedWordList, SortedSlots),
-	!,
-
-	
-	
-
+	% ! used to avoid backtracking
+	!, 
 	Puzzle = PuzzleLogical.
 
+fill_slot_list(_,[]).
+fill_slot_list([Word|Words], Slots) :-
+	% Make a X-Y, where X is NumMatches-Slot
+	% Sort by length of list
+	% Pick the first word from list of smallest length
+	generate_all_combos(Slots, [Word|Words], [], Combos),
+	keysort(Combos, [HeadSorted|_SortedCombos]),
+	HeadSorted = _-CurrSlot,
+	member(CurrSlot, [Word|Words]),
+	%  Delete doesn't work as getting [vesicle gets rid of _,_,_,i,_,_,_]
+	% delete(Slots, CurrSlot, NewSlotList),
 
+	% delete([Word|Words], CurrSlot, NewWordList),
+	% append doesnt work as not necsarrily at start of list
+	exclude(==(CurrSlot), Slots, NewSlotList),
+	exclude(==(CurrSlot), [Word|Words], NewWordList),
+	sort_wordlist(NewSlotList, SortedNewSlotList),
+	sort_wordlist(NewWordList, SortedNewWordList),
+
+	fill_slot_list(SortedNewWordList, SortedNewSlotList).
 combo_slot_word(Slot, [Word|Words], SlotFits-Slot):-
 	combo_slot_word_acc(Slot, [Word|Words], 0, SlotFits).
 
@@ -123,40 +150,12 @@ generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
 	generate_all_combos(Slots, WordList, CombosAcc0, Combos).
 
 
-fill_slot_list(_,[]).
-fill_slot_list([Word|Words], Slots) :-
-	% Make a X-Y, where X is NumMatches-Slot
-	% Sort by length of list
-	% Pick the first word from list of smallest length
-	generate_all_combos(Slots, [Word|Words], [], Combos),
-	keysort(Combos, [HeadSorted|_SortedCombos]),
-	HeadSorted = Num-CurrSlot,
-	Num > 0,
-
-	member(CurrSlot, [Word|Words]),
-	%  Delete doesn't work as getting [vesicle gets rid of _,_,_,i,_,_,_]
-	% delete(Slots, CurrSlot, NewSlotList),
-
-	% delete([Word|Words], CurrSlot, NewWordList),
-	% append doesnt work as not necsarrily at start of list
-	exclude(==(CurrSlot), Slots, NewSlotList),
-	exclude(==(CurrSlot), [Word|Words], NewWordList),
-	sort_wordlist(NewSlotList, SortedNewSlotList),
-	sort_wordlist(NewWordList, SortedNewWordList),
-
-	% print(SortedNewSlotList),
-	% length(SortedNewSlotList, L),
-	% print(L),
-	% nl,
-	% nl,
-	% print(SortedNewWordList),
-	% length(SortedNewWordList, L1),
-	% print(L1),
-	% nl,
-	% nl,
-	fill_slot_list(SortedNewWordList, SortedNewSlotList).
 
 
+/*****************************************************************************/
+%		Predicates to convert puzzle rows into rows of logic variables
+% 	Eg: [[#,'_','_', #], [#, #,'_','_']] -> [[#,_409,_302,#], [#,#_211,_231]]
+/*****************************************************************************/
 
 fill_puzzle_logical(Puzzle0, PuzzleLogical) :-
 	once(fill_puzzle_acc_logical(Puzzle0,[],PuzzleLogical)).
@@ -188,6 +187,12 @@ logical_acc_row([Char|Chars], LogicalRowAcc, LogicalRow) :-
 			)
 	),
 	logical_acc_row(Chars, LogicalRow0, LogicalRow).
+
+
+/*****************************************************************************/
+%			Predicates to convert puzzle rows into a list of slots
+% 	Eg: [[#,_409,_302, #], [#, #,_211,_231]] -> [[_409, _302], [_211,_231]]
+/*****************************************************************************/
 
 create_slots_horizontal([],PuzzleSlots,PuzzleSlots).
 create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
@@ -267,7 +272,9 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 
 	).
 
-			
+/*****************************************************************************/
+% 								Helper Predicates
+/*****************************************************************************/		
 remove_hash([],_Hash).
 
 remove_hash([Char|Chars], Hash) :-
@@ -289,8 +296,75 @@ remove_acc_hash([Char|Chars], HashAcc, TotalHash):-
 	
 remove_acc_hash([], TotalHash,TotalHash).
 
+% https://stackoverflow.com/questions/27760689/sort-a-list-of-structures-by-the-size-of-a-list
+el_keyed(El,N-El) :-
+	
+	length(El, N).
+ 
+sort_wordlist(Els, ElsS) :-
+	maplist(el_keyed, Els, KVs),
+	keysort(KVs, KVsS),
+	reverse(KVsS, RVsS),
+	
+	maplist(el_keyed, ElsS, RVsS).
 
 take2(N, List, Back) :-
 	length(Front,N),
 	append(Front, Back, List).
 
+
+/*****************************************************************************/
+%							  Provided Predicates
+/*****************************************************************************/
+
+read_file(Filename, Content) :-
+	open(Filename, read, Stream),
+	read_lines(Stream, Content),
+	close(Stream).
+
+read_lines(Stream, Content) :-
+	read_line(Stream, Line, Last),
+	(   Last = true
+	->  (   Line = []
+	    ->  Content = []
+	    ;   Content = [Line]
+	    )
+	;  Content = [Line|Content1],
+	    read_lines(Stream, Content1)
+	).
+
+read_line(Stream, Line, Last) :-
+	get_char(Stream, Char),
+	(   Char = end_of_file
+	->  Line = [],
+	    Last = true
+	; Char = '\n'
+	->  Line = [],
+	    Last = false
+	;   Line = [Char|Line1],
+	    read_line(Stream, Line1, Last)
+	).
+
+print_puzzle(SolutionFile, Puzzle) :-
+	open(SolutionFile, write, Stream),
+	maplist(print_row(Stream), Puzzle),
+	close(Stream).
+
+print_row(Stream, Row) :-
+	maplist(put_puzzle_char(Stream), Row),
+	nl(Stream).
+
+put_puzzle_char(Stream, Char) :-
+	(   var(Char)
+	->  put_char(Stream, '_')
+	;   put_char(Stream, Char)
+	).
+
+valid_puzzle([]).
+valid_puzzle([Row|Rows]) :-
+	maplist(samelength(Row), Rows).
+
+
+samelength([], []).
+samelength([_|L1], [_|L2]) :-
+	same_length(L1, L2).

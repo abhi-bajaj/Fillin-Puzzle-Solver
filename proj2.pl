@@ -1,5 +1,3 @@
-% You can use this code to get started with your fillin puzzle solver.
-% Make sure you replace this comment with your own documentation.
 
 :- ensure_loaded(library(clpfd)).
 
@@ -76,19 +74,7 @@ samelength([_|L1], [_|L2]) :-
 	same_length(L1, L2).
 
 
-% solve_puzzle(Puzzle0, WordList, Puzzle)
-% should hold when Puzzle is a solved version of Puzzle0, with the
-% empty slots filled in with words from WordList.  Puzzle0 and Puzzle
-% should be lists of lists of characters (single-character atoms), one
-% list per puzzle row.  WordList is also a list of lists of
-% characters, one list per word.
-%
-% This code is obviously wrong: it just gives back the unfilled puzzle
-% as result.  You'll need to replace this with a working
-% implementation.
 solve_puzzle(Puzzle0, WordList, Puzzle) :-
-	% Eg. [_G15092255, _G15092258, #, #, _G15092285, _G15092300] -> 
-    %   [[_G15092255, _G15092258],[_G15092285, _G15092300]]
 
 	
 	sort_wordlist(WordList, SortedWordList),
@@ -215,10 +201,9 @@ create_slots_horizontal([Row|Rows],Slots,PuzzleSlots) :-
 			
 	).
 	
-% Eg. ['_','_',#,#,'_','_'] -> [_G15092255, _G15092258, #, #, _G15092285, _G15092300]
 slot_row(Row, UnboundRow) :-
 	% Only need to do it once per row
-	once(slot_acc_row(Row, [], UnboundRow)).
+	slot_acc_row(Row, [], UnboundRow).
 
 slot_acc_row([],UnboundRow,UnboundRow).
 
@@ -275,11 +260,7 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 			(
 				append(WordAcc, [Char], UnboundWord0),
 				slot_acc_word(Chars,UnboundWord0,UnboundWord)
-				% is_alpha(Char)
-				% ->	
-				% ;	length(Unbound, 1),
-				% 	append(WordAcc, Unbound, UnboundWord0),
-				% 	slot_acc_word(Chars,UnboundWord0,UnboundWord)
+				
 			
 			
 			)
@@ -309,17 +290,6 @@ remove_acc_hash([Char|Chars], HashAcc, TotalHash):-
 remove_acc_hash([], TotalHash,TotalHash).
 
 
-	
-take(N, List, Back) :-
-	length(List, ListLen),
-	(
-		N =< ListLen
-		->	length(Front,N),
-			append(Front, Back, List)
-		;
-		
-		take(ListLen, List, Back)
-	).
 take2(N, List, Back) :-
 	length(Front,N),
 	append(Front, Back, List).

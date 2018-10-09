@@ -74,22 +74,21 @@ main(PuzzleFile, WordlistFile, SolutionFile) :-
 
 	The predicate works as such :
 
-	1. Sort the initial WordList in regards to the length of each word.
-	2. Fill the initial Puzzle with logical unbound variables, denoted by
-	   PuzzleLogical.
-	   Eg: [[#,'_','_', #], [#, #,'_','_']] -> [[#,_409,_302,#], [#,#_211,_231]]
+	1.	Sort the initial WordList in regards to the length of each word.
+	2.	Fill the initial Puzzle with logical unbound variables, denoted by
+	   	PuzzleLogical.
+	   	Eg: [[#,'_','_', #], [#, #,'_','_']] -> [[#,_409,_302,#], [#,#_211,_231]]
 	
-	3. Create a list of slots arising from the PuzzleLogical.
-	   Eg: [[#,_409,_302, #], [#, #,_211,_231]] -> [[_409, _302], [_211,_231]]
+	3.	Create a list of slots arising from the PuzzleLogical.
+	   	Eg: [[#,_409,_302, #], [#, #,_211,_231]] -> [[_409, _302], [_211,_231]]
 
-	4. Transpose the PuzzleLogical into its vertical form (PuzzleVerical)
-	   and perform step 3 on this vertical representation, appending the new
-	   list of slots to the previous list, resulting in Slots.
+	4. 	Transpose the PuzzleLogical into its vertical form (PuzzleVerical)
+	   	and perform step 3 on this vertical representation, appending the new
+	   	list of slots to the previous list, resulting in Slots.
 
-	5. Sort the Slots in regards to the length of each slot.
+	5. 	Sort the Slots in regards to the length of each slot.
 
-	6. Attempt to fill in each slot to solve the puzzle
-
+	6. 	Attempt to fill in each slot to solve the puzzle.
 
 */
 solve_puzzle(Puzzle0, WordList, Puzzle) :-
@@ -100,56 +99,90 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 	transpose(PuzzleLogical, PuzzleVertical),
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	sort_wordlist(Slots, SortedSlots),	
-	fill_slot_list(SortedWordList, SortedSlots),
+	fill_slot_list(SortedSlots, SortedWordList),
 	% ! used to avoid backtracking
 	!, 
 	Puzzle = PuzzleLogical.
 
-fill_slot_list(_,[]).
-fill_slot_list([Word|Words], Slots) :-
-	% Make a X-Y, where X is NumMatches-Slot
-	% Sort by length of list
-	% Pick the first word from list of smallest length
-	generate_all_combos(Slots, [Word|Words], [], Combos),
+/*
+	The fill_slot_list/2 predicate takes in a list of slots (Slots) and a list 
+	of words (Words). It then attempts to fill in each slot with a word in 
+	order to complete the puzzle.
+
+	The algorithm was adapted from Hint 6 of the specification and works as 
+	such:
+
+	1.	Generate all possible matches for each slot, denoted by
+		Combos. Each match is denoted by NumberOfMatches-Slot where 
+		NumberOfMatches is how many possible words fit in and 
+		are associated with that Slot. 
+
+	2.	Use the inbuilt keysort to get the slot with the least amount of 
+		matches to the front.
+	3.	Fill in the slot with the least matches.
+	4.	Repeat steps 1-3 for the remaining words and slots.
+	5.	Prolog will automatically backtrack on failures and attempt 
+		different permutations if needed.
+	6.	The puzzle is deemed solved when there are no more slots to fill, and
+		no words left to enter.
+
+*/
+fill_slot_list([],[]).
+fill_slot_list(Slots, WordList) :-
+
+	generate_all_combos(Slots, WordList, [], Combos),
 	keysort(Combos, [HeadSorted|_SortedCombos]),
 	HeadSorted = _-CurrSlot,
-	member(CurrSlot, [Word|Words]),
-	%  Delete doesn't work as getting [vesicle gets rid of _,_,_,i,_,_,_]
-	% delete(Slots, CurrSlot, NewSlotList),
 
-	% delete([Word|Words], CurrSlot, NewWordList),
-	% append doesnt work as not necsarrily at start of list
-	exclude(==(CurrSlot), Slots, NewSlotList),
-	exclude(==(CurrSlot), [Word|Words], NewWordList),
-	sort_wordlist(NewSlotList, SortedNewSlotList),
-	sort_wordlist(NewWordList, SortedNewWordList),
-
-	fill_slot_list(SortedNewWordList, SortedNewSlotList).
-combo_slot_word(Slot, [Word|Words], SlotFits-Slot):-
-	combo_slot_word_acc(Slot, [Word|Words], 0, SlotFits).
-
-combo_slot_word_acc(_, [], SlotFits, SlotFits).
-combo_slot_word_acc(Slot, [Word|Words], SlotFitsAcc, SlotFits) :-
-	(
-		copy_term(Slot, CopySlot),
-		
-		member(Word, [CopySlot])
-		->	SlotFits0 is SlotFitsAcc + 1,
-			combo_slot_word_acc(Slot, Words, SlotFits0, SlotFits)
-		;	combo_slot_word_acc(Slot, Words, SlotFitsAcc, SlotFits)
-
-
-
+	% Bind the CurrSlot
+	member(CurrSlot, WordList),
 	
-	).
+	% exclude took so long to figure out. Was initially deleting the CurrSlot,
+	% which was resulting in deletion of the unbound slots as well as the
+	% exact slot.
+	exclude(==(CurrSlot), Slots, NewSlotList),
+	exclude(==(CurrSlot), WordList, NewWordList),
+	fill_slot_list(NewSlotList, NewWordList).
 
+/*
+	generate_all_combos/4 generates all possible matches for each slot, denoted
+	by Combos. Each match is denoted by NumberOfMatches-Slot where 
+	NumberOfMatches is how many possible words fit in and 
+	are associated with that Slot.
+
+	The algorithm works as such :
+
+	Generate the NumberOfMatches-Slot for one slot, append it to the 
+	accumulated list, and recursively do this for all slots.
+*/
 generate_all_combos([], _, Combos, Combos).
 generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
 	combo_slot_word(Slot, WordList, ComboCurrent),
 	append(ComboAcc, [ComboCurrent], CombosAcc0),
 	generate_all_combos(Slots, WordList, CombosAcc0, Combos).
 
+/*
+	To get Number of Matches (SlotFits) for the Slot, count the matches via an 
+	accumulator in the combo_slot_word_acc/4 predicate
+*/
+combo_slot_word(Slot, WordList, SlotFits-Slot):-
+	combo_slot_word_acc(Slot, WordList, 0, SlotFits).
 
+/* Base Case: No more words left to try against the current slot */
+combo_slot_word_acc(_, [], SlotFits, SlotFits).
+combo_slot_word_acc(Slot, [Word|Words], SlotFitsAcc, SlotFits) :-
+	(
+		% Copy as not to bind it straight to the slot
+		copy_term(Slot, CopySlot),
+		
+		% If the word can be binded to the current slot, add 1 to the
+		% accumulator. Then check if slot can be binded to the rest of the 
+		% words
+		member(Word, [CopySlot])
+		->	SlotFits0 is SlotFitsAcc + 1,
+			combo_slot_word_acc(Slot, Words, SlotFits0, SlotFits)
+		;	combo_slot_word_acc(Slot, Words, SlotFitsAcc, SlotFits)	
+	).
 
 
 /*****************************************************************************/
@@ -157,32 +190,65 @@ generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
 % 	Eg: [[#,'_','_', #], [#, #,'_','_']] -> [[#,_409,_302,#], [#,#_211,_231]]
 /*****************************************************************************/
 
+/*
+	fill_puzzle_logical/2 fills in the puzzle with logic variables via
+	a call to fill_puzzle_acc_logical/3 predicate which makes use of an
+	accumulator. 
+*/
 fill_puzzle_logical(Puzzle0, PuzzleLogical) :-
-	once(fill_puzzle_acc_logical(Puzzle0,[],PuzzleLogical)).
+	fill_puzzle_acc_logical(Puzzle0,[],PuzzleLogical).
 
+/*
+	fill_puzzle_logical/3 fills in the puzzle with logic variables via
+	an accumulator. 
+
+	Base Case: When there are no rows left to fill.
+	
+	Otherwise generate logic variables for current row, append it to the 
+	running accumulator and then move onto the next row.
+
+*/
 fill_puzzle_acc_logical([], PuzzleLogical, PuzzleLogical).
 fill_puzzle_acc_logical([Row|Rows], LogicalAcc, PuzzleLogical):-
+
 	logical_row(Row, LogicalRow),
-	
 	append(LogicalAcc, [LogicalRow], PuzzleLogical0),
 	fill_puzzle_acc_logical(Rows, PuzzleLogical0, PuzzleLogical).
 
+/*
+	logical_row/2 fills in the row of the puzzle with logic variables via
+	a call to logical_row/3 predicate which makes use of an accumulator. 
+*/
 logical_row(Row, LogicalRow) :-
 	once(logical_acc_row(Row, [], LogicalRow)).
 
+/*
+	fill_puzzle_logical/3 fills in the row with logic variables via
+	an accumulator. 
+
+	Base Case: When there are no characters left in the row to fill.
+	
+	Otherwise generate logic variables for each, append it to the 
+	running accumulator and then move onto the next character.
+
+*/
 logical_acc_row([], LogicalRow, LogicalRow).
 logical_acc_row([Char|Chars], LogicalRowAcc, LogicalRow) :-
-	(
+	( 
+		% If the current Char is a hash character, append it straight to
+		% the accumulator.
 		Char = #
-		->	
-			append(LogicalRowAcc, [Char], LogicalRow0)
-		;	
-			(
-				is_alpha(Char)
-				->	append(LogicalRowAcc, [Char], LogicalRow0)
-					
-				;	length(Unbound, 1),
-					append(LogicalRowAcc, Unbound, LogicalRow0)			
+		->	append(LogicalRowAcc, [Char], LogicalRow0)
+		;	(
+				% Otherwise, if current Char is an underscore character,
+				% create an Unbound variable and append that variable to the
+				% accumulator.
+				Char = '_'
+				->	length(Unbound, 1),
+					append(LogicalRowAcc, Unbound, LogicalRow0)	
+				% Since neither condition passed, this must be a filled in
+				% character, append it straight to the accumulator.
+				;	append(LogicalRowAcc, [Char], LogicalRow0)
 			
 			)
 	),
@@ -254,21 +320,15 @@ slot_acc_word([Char|Chars], WordAcc,UnboundWord) :-
 
 	(
 		Char == '#'
-		->	
-			(	length(WordAcc, Len),
+		->	(	
+				length(WordAcc, Len),
 				Len =:= 0
 		
 				->	slot_acc_word(Chars, WordAcc, UnboundWord)
 				;	slot_acc_word([],WordAcc, UnboundWord)
 			)
-		;	
-			(
-				append(WordAcc, [Char], UnboundWord0),
-				slot_acc_word(Chars,UnboundWord0,UnboundWord)
-				
-			
-			
-			)
+		;	append(WordAcc, [Char], UnboundWord0),
+			slot_acc_word(Chars,UnboundWord0,UnboundWord)
 
 	).
 

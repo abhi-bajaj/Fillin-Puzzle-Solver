@@ -16,11 +16,6 @@ sort_wordlist(Els, ElsS) :-
 	maplist(el_keyed, ElsS, RVsS).
 
 
-sort_key(Els-Slots, ElsS):-
-	maplist(el_sort, Els-Slots, KVs),
-	keysort(KVs, KVsS),
-	maplist(el_sort, ElsS, KVsS).
-
 main(PuzzleFile, WordlistFile, SolutionFile) :-
 	read_file(PuzzleFile, Puzzle),
 	read_file(WordlistFile, Wordlist),
@@ -106,6 +101,15 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	sort_wordlist(Slots, SortedSlots),
+	length(Slots, L),
+	print(Slots),
+	print(L),
+	length(SortedWordList, L2),
+	nl,
+	nl,
+	print(SortedWordList),
+	print(L2),
+	
 	fill_slot_list(SortedWordList, SortedSlots),
 	!,
 
@@ -118,7 +122,7 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 combo_slot_word(Slot, [Word|Words], SlotFits-Slot):-
 	combo_slot_word_acc(Slot, [Word|Words], 0, SlotFits).
 
-combo_slot_word_acc(Slot, [], SlotFits, SlotFits).
+combo_slot_word_acc(_, [], SlotFits, SlotFits).
 combo_slot_word_acc(Slot, [Word|Words], SlotFitsAcc, SlotFits) :-
 	(
 		copy_term(Slot, CopySlot),
@@ -133,21 +137,20 @@ combo_slot_word_acc(Slot, [Word|Words], SlotFitsAcc, SlotFits) :-
 	
 	).
 
-generate_all_combos([], WordList, Combos, Combos).
+generate_all_combos([], _, Combos, Combos).
 generate_all_combos([Slot|Slots], WordList, ComboAcc, Combos):-
 	combo_slot_word(Slot, WordList, ComboCurrent),
 	append(ComboAcc, [ComboCurrent], CombosAcc0),
 	generate_all_combos(Slots, WordList, CombosAcc0, Combos).
 
-try_s(S-Slot, Slot).
 
-fill_slot_list([],[]).
+fill_slot_list(_,[]).
 fill_slot_list([Word|Words], Slots) :-
 	% Make a X-Y, where X is NumMatches-Slot
 	% Sort by length of list
 	% Pick the first word from list of smallest length
 	generate_all_combos(Slots, [Word|Words], [], Combos),
-	keysort(Combos, [HeadSorted|SortedCombos]),
+	keysort(Combos, [HeadSorted|_SortedCombos]),
 	HeadSorted = Num-CurrSlot,
 	Num > 0,
 
@@ -159,8 +162,20 @@ fill_slot_list([Word|Words], Slots) :-
 	% append doesnt work as not necsarrily at start of list
 	exclude(==(CurrSlot), Slots, NewSlotList),
 	exclude(==(CurrSlot), [Word|Words], NewWordList),
-	
-	fill_slot_list(NewWordList, NewSlotList).
+	sort_wordlist(NewSlotList, SortedNewSlotList),
+	sort_wordlist(NewWordList, SortedNewWordList),
+
+	% print(SortedNewSlotList),
+	% length(SortedNewSlotList, L),
+	% print(L),
+	% nl,
+	% nl,
+	% print(SortedNewWordList),
+	% length(SortedNewWordList, L1),
+	% print(L1),
+	% nl,
+	% nl,
+	fill_slot_list(SortedNewWordList, SortedNewSlotList).
 
 
 
@@ -239,7 +254,7 @@ slot_acc_row(Row, RowAcc, UnboundRow):-
 					;	remove_hash(Back, HashNum)
 				),
 				take2(HashNum, Back, NewBack),
-				UnboundRow0 = []
+				UnboundRow0 = RowAcc
 		)
 				
 	),

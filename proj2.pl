@@ -101,14 +101,7 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	sort_wordlist(Slots, SortedSlots),
-	length(Slots, L),
-	print(Slots),
-	print(L),
-	length(SortedWordList, L2),
-	nl,
-	nl,
-	print(SortedWordList),
-	print(L2),
+	
 	
 	fill_slot_list(SortedWordList, SortedSlots),
 	!,

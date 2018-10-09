@@ -106,9 +106,11 @@ solve_puzzle(Puzzle0, WordList, Puzzle) :-
 
 	create_slots_horizontal(PuzzleVertical, SlotList, Slots),
 	print(Slots),
+	nl,
+	nl,
 	sort_wordlist(Slots, SortedSlots),
 	fill_slot_list(SortedWordList, SortedSlots),
-
+	!,
 
 	
 	
@@ -149,11 +151,14 @@ fill_slot_list([Word|Words], Slots) :-
 	% Pick the first word from list of smallest length
 	generate_all_combos(Slots, [Word|Words], [], Combos),
 	keysort(Combos, [HeadSorted|SortedCombos]),
-	try_s(HeadSorted, CurrSlot),
+	HeadSorted = Num-CurrSlot,
+	Num > 0,
 	append([CurrSlot], NewSlotList, Slots),
 
 	member(CurrSlot, [Word|Words]),
 	append([CurrSlot], NewWordList, [Word|Words]),
+	print(NewSlotList),
+	nl,
 	fill_slot_list(NewWordList, NewSlotList).
 
 
